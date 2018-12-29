@@ -87,7 +87,16 @@ def create_response(event):
 
 @run_in_executor
 def post_to_dialogue_stream(event, result_text):
-    raise NotImplementedError
+    event_data = json.loads(event.data)
+    headers = {
+        "ES-EventType": "response_created",  # default for components responding to a query
+        "ES-EventId": str(uuid.uuid1())
+    }
+    requests.post(
+        "http://%s:%s/streams/dialogue" % (EVENT_STORE_URL, EVENT_STORE_HTTP_PORT),
+        headers=headers,
+        json={"event_id": event_data["event_id"], "response": result_text}
+    )
 
 
 def meets_criteria(event)->bool:
@@ -118,7 +127,7 @@ async def aggregate_fn():
             if e.message.find("'{{cookiecutter.component_name}}' already exists."):
                 log.info("{{cookiecutter.component_name}} dialogue subscription found.")
             else:
-                raise e
+                log.exception(e)
         dialogue_stream = await c.connect_subscription("{{cookiecutter.component_name}}", "dialogue")
         async for event in dialogue_stream.events:
             if meets_criteria(event):
