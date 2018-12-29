@@ -71,7 +71,7 @@ log.info(version_fancy())
 
 def run_in_executor(f):
     """
-    wrap a blocking (non-asyncio) func so it is executed in our loop
+    wraps a blocking (non-asyncio) function to execute it in the loop as if it were an async func
     """
     @functools.wraps(f)
     def inner(*args, **kwargs):
@@ -81,8 +81,21 @@ def run_in_executor(f):
 
 
 @run_in_executor
-def post_to_dialogue_stream():
-    pass
+def create_response(event):
+    raise NotImplementedError
+
+
+@run_in_executor
+def post_to_dialogue_stream(event, result_text):
+    raise NotImplementedError
+
+
+def meets_criteria(event)->bool:
+    """
+    :param data object from event:
+    :return: bool based on whether this component should process the event object
+    """
+    raise NotImplementedError(event)
 
 
 async def create_subscription(subscription_name, stream_name, conn):
@@ -108,13 +121,15 @@ async def aggregate_fn():
                 raise e
         dialogue_stream = await c.connect_subscription("{{cookiecutter.component_name}}", "dialogue")
         async for event in dialogue_stream.events:
-            event_obj = json.loads(event.event.data)
-            log.debug("aggregate_fn() responding to: %s" % json.dumps(event_obj))
-            try:
-                await post_to_dialogue_stream(str(event_obj["event_id"]))
+            if meets_criteria(event):
+                log.debug("aggregate_fn() responding to: %s" % json.dumps(event))
+                try:
+                    await post_to_dialogue_stream(event, create_response(event))
+                    await dialogue_stream.ack(event)
+                except Exception as e:
+                    log.exception(e)
+            else:
                 await dialogue_stream.ack(event)
-            except Exception as e:
-                log.exception(e)
 
 
 if __name__ == "__main__":
