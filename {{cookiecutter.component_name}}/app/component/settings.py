@@ -1,7 +1,7 @@
 import os
 from configobj import ConfigObj
 import logging
-import urllib
+import urllib.parse
 
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -29,7 +29,7 @@ V_DATE = CONFIG["version"]["DATE"]
 CODENAME = CONFIG["version"]["CODENAME"]
 
 logging.basicConfig(format=LOGGER_FORMAT, datefmt='[%H:%M:%S]')
-log = logging.getLogger("{{cookiecutter.component_name}}")
+log = logging.getLogger(CONFIG["config"]["NAME"])
 
 """
 CRITICAL 50
