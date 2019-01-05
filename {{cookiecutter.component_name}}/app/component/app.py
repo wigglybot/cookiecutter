@@ -70,9 +70,9 @@ async def aggregate_fn():
         dialogue_stream = await c.connect_subscription("{{cookiecutter.component_name}}", "dialogue")
         async for event in dialogue_stream.events:
             if meets_criteria(event):
-                log.debug("aggregate_fn() responding to: %s" % json.dumps(event))
+                log.debug("aggregate_fn() responding to: %s" % json.loads(event.data))
                 try:
-                    await post_to_dialogue_stream(event, create_response(event))
+                    await post_to_dialogue_stream(event, await create_response(event))
                     await dialogue_stream.ack(event)
                 except Exception as e:
                     log.exception(e)
